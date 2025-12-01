@@ -16,7 +16,7 @@
 #define GND7 47
 
 const int minimalSignal = 900;
-int defaultSignal = 2000;
+int defaultSignal = 1500;
 bool snareBeat = false;
 bool bassBeat = false;
 bool hiHatBeat = false;
@@ -24,8 +24,9 @@ bool hiHatBeat = false;
 int maxSumSignal = 0;
 
 int minSignalBass = 1000;
-int minSignalSnare = 3000;
-int minSignalHiHat = 3000;
+int minSignalSnare = 2000;
+int minSignalHiHat = 1500;
+int time = 0;
 
 void setup() {
   Serial.begin(31250);
@@ -47,21 +48,31 @@ void setup() {
 }
 
 void loop() {
-  // Считывание значения с пьезодатчика
-  int sensorValueSnare1 = analogRead(PIEZO_SNARE1);
-  int sensorValueSnare2 = analogRead(PIEZO_SNARE2);
-  int sensorValueSnare3 = analogRead(PIEZO_SNARE3);
+  // Calibration();
+  CheckBass();
+  CheckSnare();
+  CheckHiHat();
+  
+}
 
-  int sensorValueHiHat1 = analogRead(PIEZO_HI_HAT1);
-  int sensorValueHiHat2 = analogRead(PIEZO_HI_HAT2);
-  int sensorValueHiHat3 = analogRead(PIEZO_HI_HAT3);
+// void Calibration() {
+//   if (time < 1000) {
+//     int sensorValueBass = analogRead(PIEZO_BASS);
+//     int sumSignalBass = sensorValueBass;
+//     minSignalBass = (minSignalBass + sensorValueBass + 500)/2;
+//     time++;
+//   }
+//   if (time == 1000) {
+//     Serial.println(minSignalBass);
+//     time++;
+//   }
 
+  
+// }
+
+void CheckBass() {
   int sensorValueBass = analogRead(PIEZO_BASS);
-
-  int sumSignalSnare = sensorValueSnare1 + sensorValueSnare2 + sensorValueSnare3;
-  int sumSignalHiHat = sensorValueHiHat1 + sensorValueHiHat1 + sensorValueHiHat1;
   int sumSignalBass = sensorValueBass;
-
 
   if (sumSignalBass > minSignalBass & !bassBeat) {
     bassBeat = true;
@@ -70,65 +81,69 @@ void loop() {
     noteOn(0x90, 0x24, 0x00);
     // Serial.println(sumSignalBass);
   }
-    if (sumSignalBass < minSignalBass & bassBeat) {
+  if (sumSignalBass < minSignalBass & bassBeat) {
     bassBeat = false;
     // float midiSignal = float(maxSumSignal)*127/(1024*3);
     // Serial.println(midiSignal);
   } 
+}
+
+void CheckSnare() {
+  int sensorValueSnare1 = analogRead(PIEZO_SNARE1);
+  int sensorValueSnare2 = analogRead(PIEZO_SNARE2);
+  int sensorValueSnare3 = analogRead(PIEZO_SNARE3);
+
+  int sumSignalSnare = sensorValueSnare1 + sensorValueSnare2 + sensorValueSnare3;
 
   if (sumSignalSnare > minSignalSnare & !snareBeat) {
     snareBeat = true;
-    noteOn(0x90, 0x28, 45);
+
+    float deltaForce = sumSignalSnare - minSignalSnare;
+
+    int force = 127 * (deltaForce / (3072-minSignalSnare));
+    int note = 0x28;
+    // if (sensorValueSnare1 + sensorValueSnare2 > sensorValueSnare3 * 3) {
+    //   note = 37;
+    // }
+
+    noteOn(0x90, note, force);
     delay(1);
-    noteOn(0x90, 0x28, 0x00);
+    noteOn(0x90, note, 0x00);
     // Serial.println(sumSignalBass);
   }
-    if (sumSignalSnare < minSignalSnare & snareBeat) {
+  if (sumSignalSnare < minSignalSnare & snareBeat) {
     snareBeat = false;
     // float midiSignal = float(maxSumSignal)*127/(1024*3);
     // Serial.println(midiSignal);
   } 
+}
+
+void CheckHiHat() {
+  int sensorValueHiHat1 = analogRead(PIEZO_HI_HAT1);
+  int sensorValueHiHat2 = analogRead(PIEZO_HI_HAT2);
+  int sensorValueHiHat3 = analogRead(PIEZO_HI_HAT3);
+  
+  int sumSignalHiHat = sensorValueHiHat1 + sensorValueHiHat1 + sensorValueHiHat1;
 
   if (sumSignalHiHat > minSignalHiHat & !hiHatBeat) {
+    float deltaForce = sumSignalHiHat - minSignalHiHat;
+
+    int force = 127 * (deltaForce / (3072-minSignalHiHat));
+    int note = 0x28;
+
+
     hiHatBeat = true;
-    noteOn(0x90, 0x2C, 45);
+    noteOn(0x90, 0x2C, force);
     delay(1);
     noteOn(0x90, 0x2C, 0x00);
     // Serial.println(sumSignalBass);
   }
-    if (sumSignalHiHat < minSignalHiHat & hiHatBeat) {
+  if (sumSignalHiHat < minSignalHiHat & hiHatBeat) {
     hiHatBeat = false;
     // float midiSignal = float(maxSumSignal)*127/(1024*3);
     // Serial.println(midiSignal);
   } 
-
-
-  
-  // if (sumSignal > minimalSignal + defaultSignal & !beat) {
-  //   maxSumSignal = sumSignal;
-  //   // Serial.println("Удар обнаружен!");
-  //   noteOn(0x90, 0x25, 0x45);
-  //   delay(1);
-  //   noteOn(0x90, 0x25, 0x00);
-  //   beat = true;
-  // }
-//   if (beat) {
-//     maxSumSignal = max(sumSignal, maxSumSignal);
-//     if (sumSignal < minimalSignal + defaultSignal) {
-//       beat = false;
-//       float midiSignal = float(maxSumSignal)*127/(1024*3);
-//       // Serial.println(midiSignal);
-//       // Serial.println(float(sensorValue0)*127/(1024));
-//       // Serial.println(float(sensorValue1)*127/(1024));
-//       // Serial.println(float(sensorValue2)*127/(1024));
-//     } 
-//   }
-//   else {
-//     // defaultSignal = (sumSignal + defaultSignal) / 2;
-//   }
-//   // delay(1);
 }
-
 
 
 // Отправка MIDI-ноты.
@@ -139,7 +154,3 @@ void noteOn(int cmd, int pitch, int velocity) {
   Serial.write(pitch);
   Serial.write(velocity);
 }
-
-// int DrumVelocity(int min, ) {
-
-// }
