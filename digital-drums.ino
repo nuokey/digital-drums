@@ -65,7 +65,7 @@ void loop() {
 
   if (sumSignalBass > minSignalBass & !bassBeat) {
     bassBeat = true;
-    noteOn(0x90, 0x24, 0x45);
+    noteOn(0x90, 0x24, 45);
     delay(1);
     noteOn(0x90, 0x24, 0x00);
     // Serial.println(sumSignalBass);
@@ -78,7 +78,7 @@ void loop() {
 
   if (sumSignalSnare > minSignalSnare & !snareBeat) {
     snareBeat = true;
-    noteOn(0x90, 0x28, 0x45);
+    noteOn(0x90, 0x28, 45);
     delay(1);
     noteOn(0x90, 0x28, 0x00);
     // Serial.println(sumSignalBass);
